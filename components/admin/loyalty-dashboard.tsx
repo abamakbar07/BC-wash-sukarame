@@ -65,11 +65,21 @@ export function LoyaltyDashboard() {
 
   const handleViewCustomerDetail = async (customerId: string) => {
     try {
+      // Ensure customerId is valid before making the API call
+      if (!customerId) {
+        console.error("[v0] Invalid customer ID provided:", customerId);
+        toast({
+          title: "Gagal Memuat Detail",
+          description: "ID pelanggan tidak valid.",
+          variant: "destructive",
+        });
+        return;
+      }
       const customerDetail = await apiClient.getCustomerDetail(customerId)
       // Handle customer detail view - could open a modal or navigate to detail page
       toast({
         title: "Detail Pelanggan",
-        description: `Menampilkan detail untuk ${customerDetail.name}`,
+        description: `Menampilkan detail untuk ${customerDetail.customer.name}`,
       })
     } catch (err) {
       console.error("[v0] Error fetching customer detail:", err)

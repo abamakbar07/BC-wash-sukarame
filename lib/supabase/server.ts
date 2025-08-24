@@ -9,8 +9,8 @@ export const isSupabaseConfigured =
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY.length > 0
 
 // Create a cached version of the Supabase client for Server Components
-export function createClient() {
-  const cookieStore = cookies()
+export async function createClient() { // Make createClient async
+  const cookieStore = await cookies(); // Await cookies()
 
   if (!isSupabaseConfigured) {
     console.warn("Supabase environment variables are not set. Using dummy client.")
@@ -32,10 +32,8 @@ export function createClient() {
 
   return createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
     cookies: {
-      getAll() {
-        return cookieStore.getAll()
-      },
-      setAll(cookiesToSet) {
+      getAll: () => cookieStore.getAll(), // cookieStore is now ReadonlyRequestCookies
+      setAll: (cookiesToSet) => {
         try {
           cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
         } catch {
