@@ -15,10 +15,10 @@ interface Customer {
   name: string
   phone: string
   email: string
-  vehiclePlateNumbers: string[]
-  totalBookings: number
-  totalLoyaltyPoints: number
-  joinDate: string
+  vehicle_plate_numbers: string[]
+  total_bookings: number
+  total_loyalty_points: number
+  join_date: string
 }
 
 export function LoyaltyDashboard() {
@@ -48,13 +48,13 @@ export function LoyaltyDashboard() {
     (customer) =>
       customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       customer.phone.includes(searchTerm) ||
-      customer.vehiclePlateNumbers.some((plate) => plate.toLowerCase().includes(searchTerm.toLowerCase())),
+      customer.vehicle_plate_numbers.some((plate) => plate.toLowerCase().includes(searchTerm.toLowerCase())),
   )
 
   const totalCustomers = customers.length
-  const totalLoyaltyPoints = customers.reduce((sum, customer) => sum + customer.totalLoyaltyPoints, 0)
+  const totalLoyaltyPoints = customers.reduce((sum, customer) => sum + customer.total_loyalty_points, 0)
   const averagePointsPerCustomer = totalCustomers > 0 ? Math.round(totalLoyaltyPoints / totalCustomers) : 0
-  const totalVehicles = customers.reduce((sum, customer) => sum + (Array.isArray(customer.vehiclePlateNumbers) ? customer.vehiclePlateNumbers.length : 0), 0)
+  const totalVehicles = customers.reduce((sum, customer) => sum + (Array.isArray(customer.vehicle_plate_numbers) ? customer.vehicle_plate_numbers.length : 0), 0)
 
   const getCustomerTier = (points: number) => {
     if (points >= 200) return { name: "Platinum", color: "bg-purple-100 text-purple-800" }
@@ -227,7 +227,7 @@ export function LoyaltyDashboard() {
                 </TableHeader>
                 <TableBody>
                   {filteredCustomers.map((customer) => {
-                    const tier = getCustomerTier(customer.totalLoyaltyPoints)
+                    const tier = getCustomerTier(customer.total_loyalty_points)
                     return (
                       <TableRow key={customer.id}>
                         <TableCell>
@@ -242,7 +242,7 @@ export function LoyaltyDashboard() {
                             {totalVehicles === 0 ? (
                               <span className="text-xs text-muted-foreground">-</span>
                             ) : (
-                              customer.vehiclePlateNumbers.map((plate, index) => (
+                              customer.vehicle_plate_numbers.map((plate, index) => (
                                 <Badge key={index} variant="outline" className="font-mono text-xs">
                                   {plate}
                                 </Badge>
@@ -252,14 +252,14 @@ export function LoyaltyDashboard() {
                         </TableCell>
                         <TableCell>
                           <div className="text-center">
-                            <p className="font-medium">{customer.totalBookings}</p>
+                            <p className="font-medium">{customer.total_bookings}</p>
                             <p className="text-xs text-muted-foreground">kali</p>
                           </div>
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <Star className="h-4 w-4 text-yellow-500" />
-                            <span className="font-medium">{customer.totalLoyaltyPoints}</span>
+                            <span className="font-medium">{customer.total_loyalty_points}</span>
                           </div>
                         </TableCell>
                         <TableCell>
@@ -267,7 +267,7 @@ export function LoyaltyDashboard() {
                         </TableCell>
                         <TableCell>
                           <p className="text-sm">
-                            {new Date(customer.joinDate).toLocaleDateString("id-ID", {
+                            {new Date(customer.join_date).toLocaleDateString("id-ID", {
                               year: "numeric",
                               month: "short",
                               day: "numeric",
