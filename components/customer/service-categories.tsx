@@ -23,12 +23,12 @@ export function ServiceCategories() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    const fetchServices = async () => {
-      try {
-        setLoading(true)
-        const { services } = await apiClient.getServices()
+        const fetchServices = async () => {
+          try {
+            setLoading(true)
+            const { services } = await apiClient.getServices({ is_active: true })
 
-        const categoryMap = {
+            const categoryMap = {
           "car-regular": {
             id: "car-regular",
             title: "Cuci Mobil Regular",

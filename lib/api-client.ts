@@ -275,9 +275,14 @@ class ApiClient {
     }
   }
 
-  async getServices(): Promise<{ services: Service[] }> {
+  async getServices(params?: { is_active?: boolean }): Promise<{ services: Service[] }> {
     try {
-      return await this.request("/services")
+      const searchParams = new URLSearchParams();
+      if (params?.is_active) {
+        searchParams.set("is_active", "true");
+      }
+      const query = searchParams.toString();
+      return await this.request(`/services${query ? `?${query}` : ""}`);
     } catch (error) {
       console.error("[v0] Failed to fetch services:", error)
       throw error

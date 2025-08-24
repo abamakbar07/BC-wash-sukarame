@@ -32,15 +32,22 @@ function validateServiceInput(data: any): CreateServiceInput {
   return data as CreateServiceInput
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const supabase = createClient()
+    const { searchParams } = new URL(request.url)
+    const isActive = searchParams.get("is_active")
 
-    const { data: services, error } = await supabase
-      .from("services")
-      .select("*")
-      .order("category", { ascending: true })
-      .order("price", { ascending: true })
+    // Build the query builder
+    const queryBuilder = supabase.from("services").select("*")
+
+    // Conditionally apply the filter
+    const finalQuery = isActive === "true"
+      ? queryBuilder.eq("is_active", true)
+      : queryBuilder;
+
+    // Chain order methods and await the result
+    const { data: services, error } = await finalQuery.order("category", { ascending: true }).order("price", { ascending: true })
 
     if (error) {
       console.error("[v0] Database error in GET /api/services:", error)
