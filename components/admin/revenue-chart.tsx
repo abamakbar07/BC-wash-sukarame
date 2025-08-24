@@ -35,9 +35,9 @@ export function RevenueChart() {
 
         const revenueByDay = last7Days.map((date) => {
           const dateStr = date.toISOString().split("T")[0]
-          const dayBookings = bookings.filter((booking) => booking.date === dateStr)
+          const dayBookings = bookings.filter((booking) => booking.booking_date === dateStr)
           const completedBookings = dayBookings.filter((booking) => booking.status === "completed")
-          const revenue = completedBookings.reduce((sum, booking) => sum + booking.totalPrice, 0)
+          const revenue = completedBookings.reduce((sum, booking) => sum + booking.total_price, 0)
 
           return {
             day: dayNames[date.getDay()],
@@ -113,7 +113,7 @@ export function RevenueChart() {
                 axisLine={false}
                 tickMargin={8}
                 className="text-xs"
-                tickFormatter={(value) => `${(value / 1000000).toFixed(1)}M`}
+                tickFormatter={(value) => `${(value / 100000).toFixed(1)}M`}
               />
               <ChartTooltip
                 content={

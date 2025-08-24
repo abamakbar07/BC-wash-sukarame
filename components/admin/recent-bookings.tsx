@@ -32,15 +32,17 @@ export function RecentBookings() {
 
         // Get the 5 most recent bookings
         const sortedBookings = bookings
-          .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+          .sort((a, b) => new Date(b.booking_date).getTime() - new Date(a.booking_date).getTime())
           .slice(0, 5)
 
         // Enrich bookings with service and branch details
         const enrichedBookings: BookingWithDetails[] = sortedBookings.map((booking) => ({
           ...booking,
-          service: services.find((s) => s.id === booking.serviceId),
-          branch: branches.find((b) => b.id === booking.branchId),
+          service: services.find((s) => s.id === booking.service_id),
+          branch: branches.find((b) => b.id === booking.branch_id),
         }))
+
+        console.log("Enriched Bookings:", enrichedBookings)
 
         setRecentBookings(enrichedBookings)
       } catch (err) {
@@ -148,7 +150,7 @@ export function RecentBookings() {
                   <p className="text-sm text-muted-foreground">{booking.services?.name || "Layanan tidak ditemukan"}</p>
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <span>
-                      {format(booking.date ? new Date(booking.date + "T00:00:00") : new Date(), "dd MMM yyyy", { locale: id })}
+                      {format(booking.booking_date ? new Date(booking.booking_date + "T00:00:00") : new Date(), "dd MMM yyyy", { locale: id })}
                     </span>
                     <span>•</span>
                     <span>{booking.branches?.name || "Cabang tidak ditemukan"}</span>
