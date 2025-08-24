@@ -49,7 +49,8 @@ export function ServiceSelection({
       setError(null)
 
       const { services: servicesData } = await apiClient.getServices()
-      setServices(servicesData)
+      const activeServices = servicesData.filter((service) => service.is_active)
+      setServices(activeServices)
     } catch (err) {
       console.error("[v0] Error fetching services:", err)
       const errorMessage = "Gagal memuat data layanan"

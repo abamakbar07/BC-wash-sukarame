@@ -32,7 +32,7 @@ export function BranchTimeSelection({
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [branch, setBranch] = useState<Branch | undefined>(selectedBranch)
-  const [date, setDate] = useState<Date | undefined>(selectedDate ? new Date(selectedDate) : undefined)
+  const [date, setDate] = useState<Date | undefined>(selectedDate ? new Date(selectedDate) : new Date())
   const [time, setTime] = useState<string | undefined>(selectedTime)
 
   const timeSlots = [
@@ -215,7 +215,7 @@ export function BranchTimeSelection({
               mode="single"
               selected={date}
               onSelect={handleDateSelect}
-              disabled={(date) => date < new Date() || date > addDays(new Date(), 30)}
+              disabled={(date) => date < new Date()}
               className="rounded-md border"
               locale={id}
             />
@@ -225,7 +225,7 @@ export function BranchTimeSelection({
       )}
 
       {/* Time Selection */}
-      {branch && date && (
+      {branch && (
         <div className="space-y-4">
           <h2 className="font-serif text-xl font-semibold">Pilih Waktu</h2>
           <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
