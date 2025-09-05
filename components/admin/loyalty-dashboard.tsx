@@ -9,6 +9,15 @@ import { toast } from "@/hooks/use-toast"
 import { Gift, Search, Star, TrendingUp, Users, Car } from "lucide-react"
 import { useState, useEffect } from "react"
 import { apiClient } from "@/lib/api-client"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
 
 interface Customer {
   id: string
@@ -26,6 +35,11 @@ export function LoyaltyDashboard() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
+  const [detailCustomer, setDetailCustomer] = useState<Customer | null>(null)
+  const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null)
+  const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false)
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [updatedPoints, setUpdatedPoints] = useState("")
 
   useEffect(() => {
     fetchCustomers()
@@ -65,17 +79,44 @@ export function LoyaltyDashboard() {
 
   const handleViewCustomerDetail = async (customerId: string) => {
     try {
-      const customerDetail = await apiClient.getCustomerDetail(customerId)
-      // Handle customer detail view - could open a modal or navigate to detail page
-      toast({
-        title: "Detail Pelanggan",
-        description: `Menampilkan detail untuk ${customerDetail.name}`,
-      })
+      const { customer } = await apiClient.getCustomerDetail(customerId)
+      setDetailCustomer(customer)
+      setIsDetailDialogOpen(true)
     } catch (err) {
       console.error("[v0] Error fetching customer detail:", err)
       toast({
         title: "Gagal Memuat Detail",
         description: "Terjadi kesalahan saat memuat detail pelanggan.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleEditCustomer = (customer: Customer) => {
+    setEditingCustomer(customer)
+    setUpdatedPoints(customer.totalLoyaltyPoints.toString())
+    setIsEditDialogOpen(true)
+  }
+
+  const handleSaveCustomer = async () => {
+    if (!editingCustomer) return
+    try {
+      const points = parseInt(updatedPoints, 10) || 0
+      const { customer: updated } = await apiClient.updateCustomer(editingCustomer.id, {
+        totalLoyaltyPoints: points,
+      })
+      setCustomers(customers.map((c) => (c.id === updated.id ? updated : c)))
+      setIsEditDialogOpen(false)
+      setEditingCustomer(null)
+      toast({
+        title: "Poin Diperbarui",
+        description: "Poin pelanggan berhasil diperbarui.",
+      })
+    } catch (err) {
+      console.error("[v0] Error updating customer:", err)
+      toast({
+        title: "Gagal Memperbarui",
+        description: "Terjadi kesalahan saat memperbarui poin pelanggan.",
         variant: "destructive",
       })
     }
@@ -275,14 +316,24 @@ export function LoyaltyDashboard() {
                           </p>
                         </TableCell>
                         <TableCell className="text-right">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="bg-transparent"
-                            onClick={() => handleViewCustomerDetail(customer.id)}
-                          >
-                            Detail
-                          </Button>
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="bg-transparent"
+                              onClick={() => handleViewCustomerDetail(customer.id)}
+                            >
+                              Detail
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="bg-transparent"
+                              onClick={() => handleEditCustomer(customer)}
+                            >
+                              Update
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     )
@@ -293,6 +344,75 @@ export function LoyaltyDashboard() {
           )}
         </CardContent>
       </Card>
+
+      {/* Detail Dialog */}
+      <Dialog open={isDetailDialogOpen} onOpenChange={setIsDetailDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Detail Pelanggan</DialogTitle>
+          </DialogHeader>
+          {detailCustomer && (
+            <div className="space-y-2">
+              <p className="font-medium">{detailCustomer.name}</p>
+              <p className="text-sm text-muted-foreground">{detailCustomer.phone}</p>
+              <p className="text-sm text-muted-foreground">{detailCustomer.email}</p>
+              <p className="text-sm text-muted-foreground">
+                Bergabung:{" "}
+                {new Date(detailCustomer.joinDate).toLocaleDateString("id-ID", {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                })}
+              </p>
+              <div className="space-y-1">
+                <p className="text-sm font-medium">Kendaraan</p>
+                {detailCustomer.vehiclePlateNumbers.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {detailCustomer.vehiclePlateNumbers.map((plate, index) => (
+                      <Badge key={index} variant="outline" className="font-mono text-xs">
+                        {plate}
+                      </Badge>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground">-</p>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <Star className="h-4 w-4 text-yellow-500" />
+                <span className="font-medium">{detailCustomer.totalLoyaltyPoints}</span>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Poin Pelanggan</DialogTitle>
+            <DialogDescription>Perbarui poin loyalitas pelanggan.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="points">Poin Loyalitas</Label>
+              <Input
+                id="points"
+                type="number"
+                value={updatedPoints}
+                onChange={(e) => setUpdatedPoints(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+              Batal
+            </Button>
+            <Button onClick={handleSaveCustomer}>Simpan</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
