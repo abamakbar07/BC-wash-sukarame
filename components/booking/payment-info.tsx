@@ -57,9 +57,11 @@ export function PaymentInfo({ onNext, onPrev, bookingData, updateBookingData }: 
 
   useEffect(() => {
     const fetchPoints = async () => {
-      if (bookingData.customerPhone) {
+      if (bookingData.vehiclePlateNumber) {
         try {
-          const res = await apiClient.getCustomers(bookingData.customerPhone)
+          const res = await apiClient.getCustomers({
+            vehiclePlateNumber: bookingData.vehiclePlateNumber,
+          })
           if (res.customers && res.customers.length > 0) {
             setAvailablePoints(res.customers[0].total_loyalty_points)
           }
@@ -69,7 +71,7 @@ export function PaymentInfo({ onNext, onPrev, bookingData, updateBookingData }: 
       }
     }
     fetchPoints()
-  }, [bookingData.customerPhone])
+  }, [bookingData.vehiclePlateNumber])
 
   return (
     <div className="space-y-6">

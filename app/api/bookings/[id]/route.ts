@@ -98,7 +98,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       const { data: customer } = await supabase
         .from("customers")
         .select("id, total_loyalty_points")
-        .eq("phone", existingBooking.customer_phone)
+        .contains("vehicle_plate_numbers", [existingBooking.vehicle_plate_number])
         .single()
 
       if (customer) {
@@ -111,6 +111,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 
         await supabase.from("loyalty_transactions").insert({
           customer_id: customer.id,
+          vehicle_plate_number: existingBooking.vehicle_plate_number,
           booking_id: existingBooking.id,
           points: existingBooking.loyalty_points_earned,
           type: "earn",

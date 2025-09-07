@@ -385,13 +385,14 @@ class ApiClient {
   }
 
   async getCustomers(params?: {
-    phone?: string
+    vehiclePlateNumber?: string
     search?: string
     page?: number
     limit?: number
   }): Promise<{ customers: Customer[]; total: number }> {
     const searchParams = new URLSearchParams()
-    if (params?.phone) searchParams.set("phone", params.phone)
+    if (params?.vehiclePlateNumber)
+      searchParams.set("vehiclePlateNumber", params.vehiclePlateNumber)
     if (params?.search) searchParams.set("search", params.search)
     if (params?.page) searchParams.set("page", params.page.toString())
     if (params?.limit) searchParams.set("limit", params.limit.toString())

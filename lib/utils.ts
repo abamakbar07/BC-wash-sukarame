@@ -193,8 +193,8 @@ export const normalizePhoneNumber = (phone: string): string => {
 }
 
 export const normalizeVehiclePlate = (plate: string): string => {
-  // Normalize vehicle plate to uppercase with proper spacing
-  return plate.trim().toUpperCase().replace(/\s+/g, " ")
+  // Normalize vehicle plate to uppercase without any spaces
+  return plate.replace(/\s+/g, "").toUpperCase()
 }
 
 export const generateBookingCode = (): string => {

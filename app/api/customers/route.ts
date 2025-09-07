@@ -1,10 +1,12 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
+import { normalizeVehiclePlate } from "@/lib/utils"
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const phone = searchParams.get("phone")
+    const vehiclePlate = searchParams.get("vehiclePlateNumber")
     const search = searchParams.get("search")
     const limit = searchParams.get("limit")
     const page = searchParams.get("page")
@@ -20,8 +22,14 @@ export async function GET(request: NextRequest) {
       query = query.eq("phone", phone)
     }
 
+    if (vehiclePlate) {
+      query = query.contains("vehicle_plate_numbers", [normalizeVehiclePlate(vehiclePlate)])
+    }
+
     if (search) {
-      query = query.or(`name.ilike.%${search}%,phone.ilike.%${search}%`)
+      query = query.or(
+        `name.ilike.%${search}%,phone.ilike.%${search}%,vehicle_plate_numbers::text.ilike.%${search}%`,
+      )
     }
 
     const limitNum = limit ? Number.parseInt(limit) : 10

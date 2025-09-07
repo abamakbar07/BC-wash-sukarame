@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
+import { normalizeVehiclePlate } from "@/lib/utils"
 
 interface CreateBookingInput {
   customer_name: string
@@ -61,7 +62,8 @@ function validateBookingInput(data: any): CreateBookingInput {
     throw new Error(`Validation failed: ${errors.join(", ")}`)
   }
 
-  return data as CreateBookingInput
+  const cleanedPlate = normalizeVehiclePlate(data.vehicle_plate_number)
+  return { ...data, vehicle_plate_number: cleanedPlate } as CreateBookingInput
 }
 
 export async function GET(request: NextRequest) {
@@ -115,7 +117,7 @@ export async function GET(request: NextRequest) {
 
     if (search) {
       query = query.or(
-        `booking_code.ilike.%${search}%,customer_name.ilike.%${search}%,customer_phone.ilike.%${search}%`,
+        `booking_code.ilike.%${search}%,customer_name.ilike.%${search}%,customer_phone.ilike.%${search}%,vehicle_plate_number.ilike.%${search}%`,
       )
     }
 
@@ -185,7 +187,7 @@ export async function POST(request: NextRequest) {
       const { data: existingCustomer } = await supabase
         .from("customers")
         .select("*")
-        .eq("phone", bookingData.customer_phone)
+        .contains("vehicle_plate_numbers", [bookingData.vehicle_plate_number])
         .single()
 
       let customerId: string
@@ -200,6 +202,7 @@ export async function POST(request: NextRequest) {
           .from("customers")
           .update({
             name: bookingData.customer_name,
+            phone: bookingData.customer_phone,
             email: bookingData.customer_email,
             vehicle_plate_numbers: updatedPlateNumbers,
             total_bookings: existingCustomer.total_bookings + 1,
@@ -231,6 +234,7 @@ export async function POST(request: NextRequest) {
       if (bookingData.loyalty_points_used) {
         await supabase.from("loyalty_transactions").insert({
           customer_id: customerId,
+          vehicle_plate_number: bookingData.vehicle_plate_number,
           booking_id: insertData.id,
           points: bookingData.loyalty_points_used,
           type: "redeem",

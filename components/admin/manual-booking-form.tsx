@@ -18,7 +18,7 @@ import { Separator } from "@/components/ui/separator"
 import { User, Car, MapPin, FileText, CalendarIcon, Clock, CreditCard, X, CheckCircle } from "lucide-react"
 import { format, startOfDay } from "date-fns"
 import { id } from "date-fns/locale"
-import { cn } from "@/lib/utils"
+import { cn, normalizeVehiclePlate } from "@/lib/utils"
 import { apiClient } from "@/lib/api-client"
 import type { Service, Branch, CreateBookingData } from "@/lib/api-client"
 
@@ -333,7 +333,12 @@ export function ManualBookingForm({ onSuccess, onCancel }: ManualBookingFormProp
               <Input
                 id="vehiclePlateNumber"
                 value={formData.vehiclePlateNumber}
-                onChange={(e) => handleInputChange("vehiclePlateNumber", e.target.value.toUpperCase())}
+                onChange={(e) =>
+                  handleInputChange(
+                    "vehiclePlateNumber",
+                    normalizeVehiclePlate(e.target.value),
+                  )
+                }
                 placeholder="B 1234 ABC"
                 className={errors.vehiclePlateNumber ? "border-destructive" : ""}
               />

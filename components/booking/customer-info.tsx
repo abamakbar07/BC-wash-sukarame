@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
 import { User, Phone, Mail, Car, MapPin, FileText, Clock, Info } from "lucide-react"
 import { getServiceById, type Service } from "@/lib/dummy-data"
+import { normalizeVehiclePlate } from "@/lib/utils"
 import { PickupAddressInput } from "@/components/booking/pickup-address-input"
 
 interface CustomerInfoProps {
@@ -50,7 +51,9 @@ export function CustomerInfo({
     customerName: initialData?.customerName || "",
     customerPhone: initialData?.customerPhone || "",
     customerEmail: initialData?.customerEmail || "",
-    vehiclePlateNumber: initialData?.vehiclePlateNumber || "",
+    vehiclePlateNumber: initialData?.vehiclePlateNumber
+      ? normalizeVehiclePlate(initialData.vehiclePlateNumber)
+      : "",
     isPickupService: initialData?.isPickupService || false,
     pickupAddress: initialData?.pickupAddress || "",
     pickupNotes: initialData?.pickupNotes || "",
@@ -182,7 +185,12 @@ export function CustomerInfo({
                 type="text"
                 placeholder="Contoh: B 1234 ABC"
                 value={formData.vehiclePlateNumber}
-                onChange={(e) => handleInputChange("vehiclePlateNumber", e.target.value.toUpperCase())}
+                onChange={(e) =>
+                  handleInputChange(
+                    "vehiclePlateNumber",
+                    normalizeVehiclePlate(e.target.value),
+                  )
+                }
                 className={errors.vehiclePlateNumber ? "border-destructive" : ""}
               />
               {errors.vehiclePlateNumber && <p className="text-sm text-destructive">{errors.vehiclePlateNumber}</p>}
