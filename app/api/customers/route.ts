@@ -27,9 +27,12 @@ export async function GET(request: NextRequest) {
     }
 
     if (search) {
-      query = query.or(
-        `name.ilike.%${search}%,phone.ilike.%${search}%,vehicle_plate_numbers::text.ilike.%${search}%`,
-      )
+      const normalizedPlate = normalizeVehiclePlate(search)
+      const filters = [`name.ilike.%${search}%`, `phone.ilike.%${search}%`]
+      if (normalizedPlate) {
+        filters.push(`vehicle_plate_numbers.cs.{${normalizedPlate}}`)
+      }
+      query = query.or(filters.join(","))
     }
 
     const limitNum = limit ? Number.parseInt(limit) : 10
