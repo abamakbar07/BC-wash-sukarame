@@ -17,7 +17,7 @@ Aplikasi web untuk pemesanan layanan cuci kendaraan BC Wash Sukarame. Pelanggan 
 - **Backend**: Next.js Route Handlers di `app/api/*`.
 - **Database**: Supabase (Postgres + Storage) melalui `@supabase/ssr`.
 - **Maps**: Google Maps JS API (Places & Geometry) + deep link rute.
-- **Auth**: login admin via JWT sederhana.
+- **Auth**: login admin sederhana berbasis cookie tanpa JWT atau hashing.
 - **Deployment**: Vercel (konfigurasi default Next.js).
 
 ## 4. Struktur Folder
@@ -51,8 +51,8 @@ Buat `.env.local` dengan variabel:
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`
-- `ADMIN_USERNAME`, `ADMIN_PASSWORD_HASH`
-Tambahan opsional: `SUPABASE_SERVICE_ROLE_KEY`, `JWT_SECRET`.
+- `ADMIN_USERNAME`, `ADMIN_PASSWORD` (default: `admin` / `bcwash2025`)
+Tambahan opsional: `SUPABASE_SERVICE_ROLE_KEY`.
 Pastikan Google Maps API diaktifkan dan dibatasi domain, billing aktif.
 
 ## 8. Menjalankan Proyek
