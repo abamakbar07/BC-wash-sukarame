@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
 import { User, Phone, Mail, Car, MapPin, FileText, Clock, Info } from "lucide-react"
-import { getServiceById, type Service } from "@/lib/dummy-data"
+import type { Service } from "@/lib/api-client"
 import { normalizePlate } from "@/lib/normalizePlate"
 import { PickupAddressInput } from "@/components/booking/pickup-address-input"
 
@@ -60,9 +60,17 @@ export function CustomerInfo({
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [pickupWithinRadius, setPickupWithinRadius] = useState(true)
 
-  const service = selectedService ? getServiceById(selectedService.id) : null
-  const supportsPickup = true
-  const pickupFee = service?.pickupFee || 0
+  const supportsPickup = selectedService?.supports_pickup ?? false
+  const pickupFee = selectedService?.pickup_fee ?? 0
+
+  useEffect(() => {
+    if (!supportsPickup && formData.isPickupService) {
+      setFormData((prev) => ({
+        ...prev,
+        isPickupService: false,
+      }))
+    }
+  }, [supportsPickup, formData.isPickupService])
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {}
@@ -194,16 +202,25 @@ export function CustomerInfo({
                   id="isPickupService"
                   checked={formData.isPickupService}
                   onCheckedChange={(checked) => handleInputChange("isPickupService", checked as boolean)}
+                  disabled={!supportsPickup}
                 />
-                <Label htmlFor="isPickupService" className="flex items-center gap-2 cursor-pointer font-medium">
+                <Label
+                  htmlFor="isPickupService"
+                  className={`flex items-center gap-2 font-medium ${supportsPickup ? "cursor-pointer" : "text-muted-foreground"}`}
+                >
                   <MapPin className="w-4 h-4 text-cyan-600" />
-                  Layanan Pickup (+
-                  {new Intl.NumberFormat("id-ID", {
-                    style: "currency",
-                    currency: "IDR",
-                    minimumFractionDigits: 0,
-                  }).format(pickupFee)}
-                  )
+                  {supportsPickup ? "Layanan Pickup" : "Layanan pickup tidak tersedia"}
+                  {supportsPickup && (
+                    <span className="ml-1">
+                      (+
+                      {new Intl.NumberFormat("id-ID", {
+                        style: "currency",
+                        currency: "IDR",
+                        minimumFractionDigits: 0,
+                      }).format(pickupFee)}
+                      )
+                    </span>
+                  )}
                 </Label>
               </div>
 
@@ -211,9 +228,13 @@ export function CustomerInfo({
                 <div className="flex items-start gap-2 mb-2">
                   <Info className="w-4 h-4 text-cyan-600 mt-0.5" />
                   <div className="text-sm">
-                    <p className="font-medium text-cyan-800">Layanan Pickup Tersedia untuk Semua Layanan</p>
+                    <p className="font-medium text-cyan-800">
+                      {supportsPickup ? "Layanan pickup tersedia" : "Layanan pickup belum tersedia untuk layanan ini"}
+                    </p>
                     <p className="text-muted-foreground">
-                      Tim kami akan menjemput kendaraan Anda di lokasi yang ditentukan
+                      {supportsPickup
+                        ? "Tim kami akan menjemput kendaraan Anda di lokasi yang ditentukan"
+                        : "Pilih layanan lain atau lanjutkan tanpa pickup"}
                     </p>
                   </div>
                 </div>
