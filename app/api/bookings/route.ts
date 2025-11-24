@@ -75,6 +75,7 @@ export async function GET(request: NextRequest) {
     const limit = searchParams.get("limit")
     const page = searchParams.get("page")
     const search = searchParams.get("search")
+    const getAll = searchParams.get("all") === "true"
 
     const supabase = createClient()
     let query = supabase
@@ -107,11 +108,13 @@ export async function GET(request: NextRequest) {
       query = query.lte("booking_date", dateTo)
     }
 
-    const limitNum = limit ? Number.parseInt(limit) : 10
-    const pageNum = page ? Number.parseInt(page) : 1
-    const from = (pageNum - 1) * limitNum
-    const to = from + limitNum - 1
-    query = query.range(from, to)
+    if (!getAll) {
+      const limitNum = limit ? Number.parseInt(limit) : 10
+      const pageNum = page ? Number.parseInt(page) : 1
+      const from = (pageNum - 1) * limitNum
+      const to = from + limitNum - 1
+      query = query.range(from, to)
+    }
 
     if (search) {
       query = query.or(

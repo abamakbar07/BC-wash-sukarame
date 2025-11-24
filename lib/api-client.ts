@@ -213,6 +213,7 @@ class ApiClient {
     limit?: number
     page?: number
     search?: string
+    all?: boolean
   }): Promise<{ bookings: Booking[]; total: number }> {
     try {
       const searchParams = new URLSearchParams()
@@ -224,6 +225,7 @@ class ApiClient {
       if (params?.limit) searchParams.set("limit", params.limit.toString())
       if (params?.page) searchParams.set("page", params.page.toString())
       if (params?.search) searchParams.set("search", params.search)
+      if (params?.all) searchParams.set("all", "true")
 
       const query = searchParams.toString()
       const result = await this.request<{ bookings: Booking[]; total: number }>(

@@ -35,6 +35,8 @@ export function BranchTimeSelection({
   const [date, setDate] = useState<Date | undefined>(selectedDate ? new Date(selectedDate) : undefined)
   const [time, setTime] = useState<string | undefined>(selectedTime)
   const [timeSlots, setTimeSlots] = useState<string[]>([])
+  const [bookedTimeSlots, setBookedTimeSlots] = useState<string[]>([])
+  const [bookingsLoading, setBookingsLoading] = useState(false)
 
   useEffect(() => {
     if (branch) {
@@ -50,6 +52,13 @@ export function BranchTimeSelection({
   useEffect(() => {
     fetchBranches()
   }, [])
+
+  useEffect(() => {
+    if (branch && date) {
+      loadBookedSlots(branch.id, format(date, "yyyy-MM-dd"))
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [branch?.id])
 
   const fetchBranches = async () => {
     try {
@@ -71,6 +80,7 @@ export function BranchTimeSelection({
 
   const handleBranchSelect = (selectedBranch: Branch) => {
     setBranch(selectedBranch)
+    setBookedTimeSlots([])
 
     const slots = generateTimeSlots(
       selectedBranch.operating_hours_open,
@@ -82,6 +92,10 @@ export function BranchTimeSelection({
       setTime(undefined)
     }
 
+    if (date) {
+      loadBookedSlots(selectedBranch.id, format(date, "yyyy-MM-dd"))
+    }
+
     if (date && time && slots.includes(time)) {
       onSelect(selectedBranch, format(date, "yyyy-MM-dd"), time)
     }
@@ -89,6 +103,11 @@ export function BranchTimeSelection({
 
   const handleDateSelect = (selectedDate: Date | undefined) => {
     setDate(selectedDate)
+    setBookedTimeSlots([])
+    if (selectedDate && branch) {
+      const formattedDate = format(selectedDate, "yyyy-MM-dd")
+      loadBookedSlots(branch.id, formattedDate)
+    }
     if (branch && selectedDate && time) {
       onSelect(branch, format(selectedDate, "yyyy-MM-dd"), time)
     }
@@ -127,6 +146,26 @@ export function BranchTimeSelection({
     if (isToday(date)) return "Hari Ini"
     if (isTomorrow(date)) return "Besok"
     return format(date, "EEEE, dd MMMM yyyy", { locale: id })
+  }
+
+  const loadBookedSlots = async (branchId: string, bookingDate: string) => {
+    try {
+      setBookingsLoading(true)
+      const { bookings } = await apiClient.getBookings({
+        branchId,
+        date: bookingDate,
+        all: true,
+      })
+      setBookedTimeSlots(bookings.map((booking) => booking.booking_time))
+      if (time && bookings.some((booking) => booking.booking_time === time)) {
+        setTime(undefined)
+      }
+    } catch (err) {
+      console.error("[v0] Error fetching booked slots:", err)
+      showErrorToast(err, "Gagal Memuat Jadwal")
+    } finally {
+      setBookingsLoading(false)
+    }
   }
 
   const canProceed = branch && date && time
@@ -251,18 +290,26 @@ export function BranchTimeSelection({
         <div className="space-y-4">
           <h2 className="font-serif text-xl font-semibold">Pilih Waktu</h2>
           <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
-            {timeSlots.map((timeSlot) => (
-              <Button
-                key={timeSlot}
-                variant={time === timeSlot ? "default" : "outline"}
-                size="sm"
-                onClick={() => handleTimeSelect(timeSlot)}
-                className="text-sm"
-              >
-                {timeSlot}
-              </Button>
-            ))}
+            {timeSlots.map((timeSlot) => {
+              const isBooked = bookedTimeSlots.includes(timeSlot)
+              const isSelected = time === timeSlot
+
+              return (
+                <Button
+                  key={timeSlot}
+                  variant={isSelected && !isBooked ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => handleTimeSelect(timeSlot)}
+                  className="text-sm"
+                  disabled={isBooked || bookingsLoading}
+                  title={isBooked ? "Slot sudah dipesan" : undefined}
+                >
+                  {timeSlot}
+                </Button>
+              )
+            })}
           </div>
+          {bookingsLoading && <p className="text-sm text-muted-foreground">Memuat jadwal yang tersedia...</p>}
         </div>
       )}
 
