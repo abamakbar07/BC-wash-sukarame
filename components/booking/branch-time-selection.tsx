@@ -35,6 +35,9 @@ export function BranchTimeSelection({
   const [date, setDate] = useState<Date | undefined>(selectedDate ? new Date(selectedDate) : undefined)
   const [time, setTime] = useState<string | undefined>(selectedTime)
   const [timeSlots, setTimeSlots] = useState<string[]>([])
+  const [bookedTimeSlots, setBookedTimeSlots] = useState<string[]>([])
+  const [bookingsLoading, setBookingsLoading] = useState(false)
+  const [bookingsError, setBookingsError] = useState<string | null>(null)
 
   useEffect(() => {
     if (branch) {
@@ -50,6 +53,45 @@ export function BranchTimeSelection({
   useEffect(() => {
     fetchBranches()
   }, [])
+
+  useEffect(() => {
+    const fetchBookedSlots = async () => {
+      if (!branch || !date) {
+        setBookedTimeSlots([])
+        setBookingsError(null)
+        return
+      }
+
+      try {
+        setBookingsLoading(true)
+        setBookingsError(null)
+
+        const formattedDate = format(date, "yyyy-MM-dd")
+        const { bookings } = await apiClient.getBookings({
+          branchId: branch.id,
+          date: formattedDate,
+          limit: 1000,
+        })
+
+        const bookedSlots = Array.from(new Set(bookings.map((booking) => booking.booking_time)))
+        setBookedTimeSlots(bookedSlots)
+
+        if (time && bookedSlots.includes(time)) {
+          setTime(undefined)
+        }
+      } catch (err) {
+        console.error("[v0] Error fetching booked slots:", err)
+        const errorMessage = "Gagal memuat jadwal yang sudah dibooking"
+        setBookingsError(errorMessage)
+        showErrorToast(err, "Gagal Memuat Jadwal")
+      } finally {
+        setBookingsLoading(false)
+      }
+    }
+
+    fetchBookedSlots()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [branch, date])
 
   const fetchBranches = async () => {
     try {
@@ -95,6 +137,8 @@ export function BranchTimeSelection({
   }
 
   const handleTimeSelect = (selectedTime: string) => {
+    if (bookedTimeSlots.includes(selectedTime)) return
+
     setTime(selectedTime)
     if (branch && date) {
       onSelect(branch, format(date, "yyyy-MM-dd"), selectedTime)
@@ -250,6 +294,12 @@ export function BranchTimeSelection({
       {branch && date && (
         <div className="space-y-4">
           <h2 className="font-serif text-xl font-semibold">Pilih Waktu</h2>
+          {bookingsError && (
+            <p className="text-sm text-destructive">{bookingsError}</p>
+          )}
+          {bookingsLoading && (
+            <p className="text-sm text-muted-foreground">Memuat jadwal yang telah dibooking...</p>
+          )}
           <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
             {timeSlots.map((timeSlot) => (
               <Button
@@ -258,6 +308,7 @@ export function BranchTimeSelection({
                 size="sm"
                 onClick={() => handleTimeSelect(timeSlot)}
                 className="text-sm"
+                disabled={bookedTimeSlots.includes(timeSlot)}
               >
                 {timeSlot}
               </Button>
