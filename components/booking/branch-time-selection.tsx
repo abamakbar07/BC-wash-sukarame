@@ -36,6 +36,7 @@ export function BranchTimeSelection({
   const [time, setTime] = useState<string | undefined>(selectedTime)
   const [timeSlots, setTimeSlots] = useState<string[]>([])
   const [bookedTimeSlots, setBookedTimeSlots] = useState<string[]>([])
+  const [bookingsByDate, setBookingsByDate] = useState<Record<string, string[]>>({})
   const [bookingsLoading, setBookingsLoading] = useState(false)
 
   useEffect(() => {
@@ -54,8 +55,8 @@ export function BranchTimeSelection({
   }, [])
 
   useEffect(() => {
-    if (branch && date) {
-      loadBookedSlots(branch.id, format(date, "yyyy-MM-dd"))
+    if (branch) {
+      loadBranchBookings(branch.id)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [branch?.id])
@@ -81,6 +82,9 @@ export function BranchTimeSelection({
   const handleBranchSelect = (selectedBranch: Branch) => {
     setBranch(selectedBranch)
     setBookedTimeSlots([])
+    setBookingsByDate({})
+    setDate(undefined)
+    setTime(undefined)
 
     const slots = generateTimeSlots(
       selectedBranch.operating_hours_open,
@@ -91,25 +95,25 @@ export function BranchTimeSelection({
     if (time && !slots.includes(time)) {
       setTime(undefined)
     }
-
-    if (date) {
-      loadBookedSlots(selectedBranch.id, format(date, "yyyy-MM-dd"))
-    }
-
-    if (date && time && slots.includes(time)) {
-      onSelect(selectedBranch, format(date, "yyyy-MM-dd"), time)
-    }
   }
 
   const handleDateSelect = (selectedDate: Date | undefined) => {
     setDate(selectedDate)
-    setBookedTimeSlots([])
-    if (selectedDate && branch) {
-      const formattedDate = format(selectedDate, "yyyy-MM-dd")
-      loadBookedSlots(branch.id, formattedDate)
+    if (!selectedDate) {
+      setBookedTimeSlots([])
+      return
     }
-    if (branch && selectedDate && time) {
-      onSelect(branch, format(selectedDate, "yyyy-MM-dd"), time)
+
+    const formattedDate = format(selectedDate, "yyyy-MM-dd")
+    const slotsForDate = bookingsByDate[formattedDate] || []
+    setBookedTimeSlots(slotsForDate)
+
+    if (time && slotsForDate.includes(time)) {
+      setTime(undefined)
+    }
+
+    if (branch && time && !slotsForDate.includes(time)) {
+      onSelect(branch, formattedDate, time)
     }
   }
 
@@ -117,6 +121,45 @@ export function BranchTimeSelection({
     setTime(selectedTime)
     if (branch && date) {
       onSelect(branch, format(date, "yyyy-MM-dd"), selectedTime)
+    }
+  }
+
+  const loadBranchBookings = async (branchId: string) => {
+    try {
+      setBookingsLoading(true)
+      const { bookings } = await apiClient.getBookings({
+        branchId,
+        all: true,
+        timeslotsOnly: true,
+      })
+
+      const groupedBookings = bookings.reduce<Record<string, string[]>>((acc, booking) => {
+        const dateKey = booking.booking_date
+        if (!acc[dateKey]) {
+          acc[dateKey] = []
+        }
+        if (!acc[dateKey].includes(booking.booking_time)) {
+          acc[dateKey].push(booking.booking_time)
+        }
+        return acc
+      }, {})
+
+      setBookingsByDate(groupedBookings)
+
+      if (date) {
+        const formattedDate = format(date, "yyyy-MM-dd")
+        const slotsForDate = groupedBookings[formattedDate] || []
+        setBookedTimeSlots(slotsForDate)
+
+        if (time && slotsForDate.includes(time)) {
+          setTime(undefined)
+        }
+      }
+    } catch (err) {
+      console.error("[v0] Error fetching booked slots:", err)
+      showErrorToast(err, "Gagal Memuat Jadwal")
+    } finally {
+      setBookingsLoading(false)
     }
   }
 
@@ -146,26 +189,6 @@ export function BranchTimeSelection({
     if (isToday(date)) return "Hari Ini"
     if (isTomorrow(date)) return "Besok"
     return format(date, "EEEE, dd MMMM yyyy", { locale: id })
-  }
-
-  const loadBookedSlots = async (branchId: string, bookingDate: string) => {
-    try {
-      setBookingsLoading(true)
-      const { bookings } = await apiClient.getBookings({
-        branchId,
-        date: bookingDate,
-        all: true,
-      })
-      setBookedTimeSlots(bookings.map((booking) => booking.booking_time))
-      if (time && bookings.some((booking) => booking.booking_time === time)) {
-        setTime(undefined)
-      }
-    } catch (err) {
-      console.error("[v0] Error fetching booked slots:", err)
-      showErrorToast(err, "Gagal Memuat Jadwal")
-    } finally {
-      setBookingsLoading(false)
-    }
   }
 
   const canProceed = branch && date && time

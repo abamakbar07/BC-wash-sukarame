@@ -75,17 +75,19 @@ export async function GET(request: NextRequest) {
     const limit = searchParams.get("limit")
     const page = searchParams.get("page")
     const search = searchParams.get("search")
-    const getAll = searchParams.get("all") === "true"
+    const timeslotsOnly = searchParams.get("timeslotsOnly") === "true"
+    const getAll = timeslotsOnly || searchParams.get("all") === "true"
 
     const supabase = createClient()
+    const selectColumns = timeslotsOnly
+      ? "id, branch_id, booking_date, booking_time, status"
+      : `*,
+        services (name, category, price, duration, pickup_fee),
+        branches (name, address, phone)`
+
     let query = supabase
       .from("bookings")
-      .select(
-        `*,
-        services (name, category, price, duration, pickup_fee),
-        branches (name, address, phone)`,
-        { count: "exact" },
-      )
+      .select(selectColumns, { count: "exact" })
       .order("created_at", { ascending: false })
 
     if (branchId) {
@@ -94,6 +96,8 @@ export async function GET(request: NextRequest) {
 
     if (status) {
       query = query.eq("status", status)
+    } else if (timeslotsOnly) {
+      query = query.neq("status", "cancelled")
     }
 
     if (date) {
@@ -116,7 +120,7 @@ export async function GET(request: NextRequest) {
       query = query.range(from, to)
     }
 
-    if (search) {
+    if (search && !timeslotsOnly) {
       query = query.or(
         `booking_code.ilike.%${search}%,customer_name.ilike.%${search}%,customer_phone.ilike.%${search}%`,
       )
@@ -146,6 +150,27 @@ export async function POST(request: NextRequest) {
 
     const now = new Date()
     const bookingCode = `BCW${now.getFullYear().toString().slice(-2)}${(now.getMonth() + 1).toString().padStart(2, "0")}${now.getDate().toString().padStart(2, "0")}${now.getHours().toString().padStart(2, "0")}${now.getMinutes().toString().padStart(2, "0")}`
+
+    const { data: conflictingBookings, error: conflictingBookingsError } = await supabase
+      .from("bookings")
+      .select("id, status")
+      .eq("branch_id", bookingData.branch_id)
+      .eq("booking_date", bookingData.booking_date)
+      .eq("booking_time", bookingData.booking_time)
+      .neq("status", "cancelled")
+      .limit(1)
+
+    if (conflictingBookingsError) {
+      console.error("[v0] Error checking existing bookings:", conflictingBookingsError)
+      return NextResponse.json({ error: "Gagal memeriksa jadwal" }, { status: 500 })
+    }
+
+    if (conflictingBookings && conflictingBookings.length > 0) {
+      return NextResponse.json(
+        { error: "Slot waktu sudah dipesan. Silakan pilih waktu lain." },
+        { status: 400 },
+      )
+    }
 
     const { data: serviceRecord } = await supabase
       .from("services")

@@ -53,6 +53,21 @@ interface Booking {
   };
 }
 
+type BookingTimeslot = Pick<Booking, "id" | "branch_id" | "booking_date" | "booking_time" | "status">
+
+type GetBookingsParams = {
+  branchId?: string
+  status?: string
+  date?: string
+  dateFrom?: string
+  dateTo?: string
+  limit?: number
+  page?: number
+  search?: string
+  all?: boolean
+  timeslotsOnly?: boolean
+}
+
 interface Service {
   id: string
   name: string
@@ -204,17 +219,9 @@ class ApiClient {
     })
   }
 
-  async getBookings(params?: {
-    branchId?: string
-    status?: string
-    date?: string
-    dateFrom?: string
-    dateTo?: string
-    limit?: number
-    page?: number
-    search?: string
-    all?: boolean
-  }): Promise<{ bookings: Booking[]; total: number }> {
+  async getBookings(params: GetBookingsParams & { timeslotsOnly: true }): Promise<{ bookings: BookingTimeslot[]; total: number }>
+  async getBookings(params?: GetBookingsParams): Promise<{ bookings: Booking[]; total: number }>
+  async getBookings(params?: GetBookingsParams): Promise<{ bookings: Booking[] | BookingTimeslot[]; total: number }> {
     try {
       const searchParams = new URLSearchParams()
       if (params?.branchId) searchParams.set("branchId", params.branchId)
@@ -226,13 +233,14 @@ class ApiClient {
       if (params?.page) searchParams.set("page", params.page.toString())
       if (params?.search) searchParams.set("search", params.search)
       if (params?.all) searchParams.set("all", "true")
+      if (params?.timeslotsOnly) searchParams.set("timeslotsOnly", "true")
 
       const query = searchParams.toString()
       const result = await this.request<{ bookings: Booking[]; total: number }>(
         `/bookings${query ? `?${query}` : ""}`,
       )
 
-      return result
+      return result as { bookings: Booking[] | BookingTimeslot[]; total: number }
     } catch (error) {
       console.error("[v0] Failed to fetch bookings:", error)
       throw error
@@ -507,4 +515,4 @@ class ApiClient {
 
 export const apiClient = new ApiClient()
 
-export type { Booking, Service, Branch, Customer, CreateBookingData }
+export type { Booking, BookingTimeslot, Service, Branch, Customer, CreateBookingData, GetBookingsParams }
