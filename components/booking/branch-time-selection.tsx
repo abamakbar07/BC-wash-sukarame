@@ -55,6 +55,8 @@ export function BranchTimeSelection({
   }, [])
 
   useEffect(() => {
+    let isCancelled = false
+
     const fetchBookedSlots = async () => {
       if (!branch || !date) {
         setBookedTimeSlots([])
@@ -62,16 +64,26 @@ export function BranchTimeSelection({
         return
       }
 
+      const requestBranchId = branch.id
+      const requestDate = format(date, "yyyy-MM-dd")
+
       try {
         setBookingsLoading(true)
         setBookingsError(null)
 
-        const formattedDate = format(date, "yyyy-MM-dd")
         const { bookings } = await apiClient.getBookings({
-          branchId: branch.id,
-          date: formattedDate,
+          branchId: requestBranchId,
+          date: requestDate,
           limit: 1000,
         })
+
+        if (
+          isCancelled ||
+          requestBranchId !== branch?.id ||
+          (date && format(date, "yyyy-MM-dd") !== requestDate)
+        ) {
+          return
+        }
 
         const bookedSlots = Array.from(new Set(bookings.map((booking) => booking.booking_time)))
         setBookedTimeSlots(bookedSlots)
@@ -82,14 +94,27 @@ export function BranchTimeSelection({
       } catch (err) {
         console.error("[v0] Error fetching booked slots:", err)
         const errorMessage = "Gagal memuat jadwal yang sudah dibooking"
-        setBookingsError(errorMessage)
+        if (!isCancelled) {
+          setBookingsError(errorMessage)
+        }
         showErrorToast(err, "Gagal Memuat Jadwal")
       } finally {
-        setBookingsLoading(false)
+        if (!isCancelled) {
+          setBookingsLoading(false)
+        }
       }
     }
 
-    fetchBookedSlots()
+    const guardedFetch = async () => {
+      if (isCancelled) return
+      await fetchBookedSlots()
+    }
+
+    guardedFetch()
+
+    return () => {
+      isCancelled = true
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [branch, date])
 
