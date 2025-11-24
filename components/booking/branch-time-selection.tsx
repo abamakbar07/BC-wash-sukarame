@@ -124,6 +124,12 @@ export function BranchTimeSelection({
     }
   }
 
+  const formatBookingTime = (time: string) => {
+    const [hours, minutes] = time.split(":")
+    if (!hours || !minutes) return time
+    return `${hours.padStart(2, "0")}:${minutes.padStart(2, "0")}`
+  }
+
   const loadBranchBookings = async (branchId: string) => {
     try {
       setBookingsLoading(true)
@@ -135,11 +141,12 @@ export function BranchTimeSelection({
 
       const groupedBookings = bookings.reduce<Record<string, string[]>>((acc, booking) => {
         const dateKey = booking.booking_date
+        const bookingTime = formatBookingTime(booking.booking_time)
         if (!acc[dateKey]) {
           acc[dateKey] = []
         }
-        if (!acc[dateKey].includes(booking.booking_time)) {
-          acc[dateKey].push(booking.booking_time)
+        if (!acc[dateKey].includes(bookingTime)) {
+          acc[dateKey].push(bookingTime)
         }
         return acc
       }, {})
